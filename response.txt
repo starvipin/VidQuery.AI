@@ -1,0 +1,9 @@
+I'd be happy to help you with your numpy library teaching!
+
+You're looking for information on arrays in numpy, right? I'm assuming you meant to ask "where is array taught" instead of "whare is arry taught".
+
+From what I understand, you can find the information about arrays in numpy in Video 3. Specifically, it starts at around 0:32 seconds into that video.
+
+In Video 3, we discuss how numpy arrays work and their benefits over traditional Python lists. We cover topics such as array creation, indexing, slicing, and basic operations like addition and multiplication.
+
+If you're interested in learning more about arrays or have specific questions related to numpy arrays, I'd be happy to help guide you through Video 3 and provide additional explanations.
