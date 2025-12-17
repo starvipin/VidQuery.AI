@@ -15,6 +15,17 @@ def create_embedding(text_list):
     embedding = r.json()["embeddings"] 
     return embedding
 
+def inference(prompt):
+    r = requests.post("http://localhost:11434/api/generate", json={
+        # "model": "deepseek-r1",
+        "model": "llama3.2",
+        "prompt": prompt,
+        "stream": False
+    })
+
+    response = r.json()
+    print(response)
+    return response
 
 df = joblib.load('embedding.joblib')
 
@@ -33,16 +44,20 @@ max_indx = similarities.argsort()[::-1][0:top_results]
 new_df = df.loc[max_indx] 
 # print(new_df[["title", "number", "text"]])
 
-prompt = f'''i im wahtching the numpy videos course. here here are video subtitle chunks containg videos title, video number, start time in second, end time in the seconds, the txt that time:
+prompt = f'''I am teaching numpy library in my ai/ml prime course. Here are video subtitle chunks containing video title, video number, start time in seconds, end time in seconds, the text at that time:
 
-{new_df[["title","number","start","end","text"]].to_json()}  
-------------------------------------------------
+{new_df[["title", "number", "start", "end", "text"]].to_json(orient="records")}
+---------------------------------
 "{incoming_query}"
-user ask the quation related to the vidos chunks, you have to the answar where and how mouch content is taught in witch video 
-(in witch video and at what timestamp) and guide the user to go to the particular video. if user asks unrelated question, tell hm that you can only answer
-question related to the course    
+User asked this question related to the video chunks, you have to answer in a human way (dont mention the above format, its just for you) where and how much content is taught in which video (in which video and at what timestamp) and guide the user to go to that particular video. If user asks unrelated question, tell him that you can only answer questions related to the course
 '''
-with open("romt.txt", "w") as f:
+with open("prompt.txt", "w") as f:
     f.write(prompt)
-# for index, item in new_df.iterrows(): 
-    # print(index, item["title"], item["number"], item["text"], item["start"], item["end"])
+
+response = inference(prompt)["response"]
+print(response)
+
+with open("response.txt", "w") as f:
+    f.write(response)
+# for index, item in new_df.iterrows():
+#     print(index, item["title"], item["number"], item["text"], item["start"], item["end"])
