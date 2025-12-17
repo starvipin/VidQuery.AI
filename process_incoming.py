@@ -44,5 +44,5 @@ question related to the course
 '''
 with open("romt.txt", "w") as f:
     f.write(prompt)
-# for index, item in new_df.iterrows():
+# for index, item in new_df.iterrows(): 
     # print(index, item["title"], item["number"], item["text"], item["start"], item["end"])
