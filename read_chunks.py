@@ -32,7 +32,7 @@ for json_file in jsons:
         chunk['embedding'] = embeddings[i]
         chunk_id += 1
         my_dicts.append(chunk) 
-# print(my_dicts)
+# print(my_dicts) 
 
 df = pd.DataFrame.from_records(my_dicts)
 # Save this dataframe
