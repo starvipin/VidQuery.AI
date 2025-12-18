@@ -42,7 +42,7 @@ def inference_openai(prompt):
 
     return response.output_text
 
-df = joblib.load('embedding.joblib')
+df = joblib.load('newembeddings.joblib')
 
 
 incoming_query = input("Ask a Question: ")

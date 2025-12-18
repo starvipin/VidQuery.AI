@@ -1,9 +1,15 @@
-I'd be happy to help you with your numpy library teaching!
+It looks like “math” topics are covered in these spots, but I don’t see any segment about NumPy slicing in the clips you shared.
 
-You're looking for information on arrays in numpy, right? I'm assuming you meant to ask "where is array taught" instead of "whare is arry taught".
+Math coverage:
+- Video 18 (“Other”)
+  - 3:13–3:24 (193.04–204.48s) ~11.4s: Rounding functions — floor and trunc (rounding down and truncating decimals). Open Video 18 and jump to 3:13.
+  - 4:36–4:46 (276.24–286.32s) ~10.1s: Mentions trig functions (sin, cos, tan) and matrix-related functions. Jump to 4:36.
 
-From what I understand, you can find the information about arrays in numpy in Video 3. Specifically, it starts at around 0:32 seconds into that video.
+- Video 17 (“Mathematical”)
+  - 3:43–3:47 (223.36–227.24s) ~3.9s: Quick variance example. Open Video 17 and jump to 3:43.
 
-In Video 3, we discuss how numpy arrays work and their benefits over traditional Python lists. We cover topics such as array creation, indexing, slicing, and basic operations like addition and multiplication.
+- Video 16 (“Math”)
+  - 0:50–1:00 (50–60s) ~10s: Brief note about revising math before the math section (intro/meta). Open Video 16 and jump to 0:50.
 
-If you're interested in learning more about arrays or have specific questions related to numpy arrays, I'd be happy to help guide you through Video 3 and provide additional explanations.
+Slicing:
+- Not found in the provided excerpts. If you can share the video title/number or more timestamps where slicing might appear, I’ll point you to the exact spot.
