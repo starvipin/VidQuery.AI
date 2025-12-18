@@ -12,17 +12,16 @@ def create_embedding(text_list):
         "model": "bge-m3",
         "input": text_list
     })
-
     embedding = r.json()["embeddings"] 
     return embedding
 
 
-jsons = os.listdir("jsons")  # List all the jsons 
+jsons = os.listdir("newjsons")  # List all the jsons 
 my_dicts = []
 chunk_id = 0
 
 for json_file in jsons:
-    with open(f"jsons/{json_file}") as f:
+    with open(f"newjsons/{json_file}") as f:
         content = json.load(f)
     print(f"Creating Embeddings for {json_file}")
     embeddings = create_embedding([c['text'] for c in content['chunks']])
@@ -36,5 +35,5 @@ for json_file in jsons:
 
 df = pd.DataFrame.from_records(my_dicts)
 # Save this dataframe
-joblib.dump(df, 'embeddings.joblib')
+joblib.dump(df, 'newembeddings.joblib')
 
