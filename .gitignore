@@ -6,3 +6,5 @@ newjsons
 config.py
 embedding.joblib
 .env
+__pycache__/
+*.pyc
