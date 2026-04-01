@@ -4,7 +4,12 @@ import numpy as np
 import joblib 
 import requests
 from openai import OpenAI
-from config import api_key
+import os
+from dotenv import load_dotenv
+
+# .env file load karke api_key get karna
+load_dotenv()
+api_key = os.getenv("api_key")
 
 client = OpenAI(api_key=api_key)
 
