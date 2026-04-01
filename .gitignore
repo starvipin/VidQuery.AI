@@ -3,3 +3,6 @@ videos
 unuse
 jsons
 newjsons
+config.py
+embedding.joblib
+.env
