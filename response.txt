@@ -1,15 +1,26 @@
-It looks like “math” topics are covered in these spots, but I don’t see any segment about NumPy slicing in the clips you shared.
+Here’s where “arrays” are covered in your course and exactly when to watch:
 
-Math coverage:
-- Video 18 (“Other”)
-  - 3:13–3:24 (193.04–204.48s) ~11.4s: Rounding functions — floor and trunc (rounding down and truncating decimals). Open Video 18 and jump to 3:13.
-  - 4:36–4:46 (276.24–286.32s) ~10.1s: Mentions trig functions (sin, cos, tan) and matrix-related functions. Jump to 4:36.
+- Video 05 — Creating
+  - 06:16–06:20 (375.96–379.96s), ~4s
+  - What: Quick overview of different NumPy functions used to create arrays.
+  - Go to: Video 05 and jump to 06:16.
 
-- Video 17 (“Mathematical”)
-  - 3:43–3:47 (223.36–227.24s) ~3.9s: Quick variance example. Open Video 17 and jump to 3:43.
+- Video 11 — Common
+  - 00:52–01:03 (52.16–63.20s), ~11s
+  - What: Checking array.dtype (int64 vs int32) and how it can depend on your system.
+  - Go to: Video 11 and jump to 00:52.
 
-- Video 16 (“Math”)
-  - 0:50–1:00 (50–60s) ~10s: Brief note about revising math before the math section (intro/meta). Open Video 16 and jump to 0:50.
+- Video 12 — Multi-dimensional
+  - 08:19–08:34 (499.2–513.92s), ~15s
+  - What: Creating a 2D array (3×3 example: 1–9 layout).
+  - Go to: Video 12 and jump to 08:19.
 
-Slicing:
-- Not found in the provided excerpts. If you can share the video title/number or more timestamps where slicing might appear, I’ll point you to the exact spot.
+- Video 13 — 3D
+  - 00:00–00:16 (0.00–15.56s), ~16s
+  - What: Creating a 3D array (size 2×2×3).
+  - Go to: Video 13 from the start.
+  - 05:06–05:10 (306.16–310.16s), ~4s
+  - What: Mentions useful operations on 3D arrays.
+  - Go to: Video 13 and jump to 05:06.
+
+If you tell me whether you want creation, dtypes, 2D, 3D, or operations, I’ll point you to the most relevant clip first.
