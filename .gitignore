@@ -1,10 +1,10 @@
 audios 
 videos
 unuse
-jsons/
+jsons
 newjsons
 config.py
-embedding.joblib
+embeddings/embedding.joblib/
 .env
 __pycache__/
 *.pyc
