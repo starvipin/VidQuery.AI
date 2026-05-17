@@ -14,7 +14,3 @@ for file in files:
     print(tutorial_number,file_name)
     subprocess.run(["ffmpeg", "-i", f"./videos/{file}", f"./audios/{tutorial_number}_{file_name}.mp3" ])
     
-
-# a = "12_dsd"
-
-# print(a.split("_")[0])
