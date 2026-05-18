@@ -91,11 +91,11 @@ def process_url():
     data = request.get_json() or {}
     
     url_value = data.get("url")
-    if not url_value:
-        return jsonify({"success": False, "error": "URL dena zaroori hai."}), 400
+    # Pylance type-narrowing ke liye isinstance check
+    if not url_value or not isinstance(url_value, str):
+        return jsonify({"success": False, "error": "URL dena zaroori hai aur wo string hona chahiye."}), 400
 
-    # Safety ke sath strip use karna taaki error na aaye
-    url = str(url_value).strip()
+    url = url_value.strip()
 
     # Pehle video ID nikalo URL se (already loaded _t module se)
     video_id = extract_video_id(url)
@@ -107,14 +107,14 @@ def process_url():
 
     # ── Cache check: Video already DB mein hai? ──────────────────────────────
     if video_exists(video_id):
-        print(f"Cache hit! '{video_id}' database mein mila.")
+        print(f"💾 Cache hit! '{video_id}' database mein mila.")
         transcript_data   = load_transcript(video_id)
         embedded_chunks   = load_chunks(video_id)
         from_cache        = True
 
     else:
         # ── Fresh fetch ──────────────────────────────────────────────────────
-        print(f"'{video_id}' database mein nahi hai. YouTube se fetch kar rahe hain...")
+        print(f"🔄 '{video_id}' database mein nahi hai. YouTube se fetch kar rahe hain...")
 
         result = get_transcript_for_url(url)
         if not result["success"]:
@@ -132,14 +132,14 @@ def process_url():
         try:
             embedded_chunks = embed_chunks(chunks)
         except Exception as e:
-            print(f"Embedding error: {e}")
+            print(f"⚠️  Embedding error: {e}")
             embedded_chunks = chunks  # Embedding fail hone par bhi aage chalo
 
         # ── Database mein save karo ──────────────────────────────────────────
         save_video(video_id, language)
         save_transcript(video_id, transcript_data)
         save_chunks(video_id, embedded_chunks)
-        print(f"'{video_id}' database mein save ho gaya.")
+        print(f"✅ '{video_id}' database mein save ho gaya.")
 
     # UI ke liye formatted transcript
     formatted = format_transcript_with_timestamps(transcript_data)
@@ -178,11 +178,14 @@ def ask_question():
     """
     Video ke baare mein question poocho → DB se chunks lo → AI answer dega.
     """
-    data       = request.get_json() or {}
+    data = request.get_json() or {}
     
-    # or "" ka use karke ensure karein ki string object hi return ho strip ke liye
-    video_id   = (data.get("video_id") or "").strip()
-    question   = (data.get("question") or "").strip()
+    v_id = data.get("video_id")
+    q_val = data.get("question")
+    
+    # Strictly check kar rahe hain ki agar string hai tabhi strip() chale
+    video_id = v_id.strip() if isinstance(v_id, str) else ""
+    question = q_val.strip() if isinstance(q_val, str) else ""
 
     if not video_id or not question:
         return jsonify({"success": False, "error": "video_id aur question dono zaroori hain."}), 400
@@ -233,7 +236,11 @@ Sawal: {question}"""
             temperature=0.3,
             max_tokens=600,
         )
-        answer = response.choices[0].message.content.strip()
+        
+        # Pylance ko batane ke liye ki content None nahi hai
+        ai_content = response.choices[0].message.content
+        answer = ai_content.strip() if ai_content is not None else "AI ne koi jawab nahi diya."
+        
     except Exception as e:
         return jsonify({"success": False, "error": f"OpenAI error: {str(e)}"}), 500
 
