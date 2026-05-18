@@ -1,86 +1,280 @@
-import pandas as pd 
-from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np 
-import joblib 
-import requests
-from openai import OpenAI
+"""
+app.py — Flask application entry point
+YouTube CC + AI Q&A with timestamps using SQLite Database
+"""
+
 import os
+import sys
+import importlib.util
+from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
+from openai import OpenAI
 
-# .env file load karke api_key get karna
+# Load Environment Variables
 load_dotenv()
-api_key = os.getenv("api_key")
 
-client = OpenAI(api_key=api_key)
+app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key-change-this")
 
-
-def create_embedding(text_list):
-    # https://github.com/ollama/ollama/blob/main/docs/api.md#generate-embeddings
-    r = requests.post("http://localhost:11434/api/embed", json={
-        "model": "bge-m3",
-        "input": text_list
-    })
-
-    embedding = r.json()["embeddings"] 
-    return embedding
+# Initialize OpenAI Client
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
-
-def inference(prompt):
-    r = requests.post("http://localhost:11434/api/generate", json={
-        # "model": "deepseek-r1",
-        "model": "llama3.2",
-        "prompt": prompt,
-        "stream": False
-    })
-
-    response = r.json()
-    print(response)
-    return response
-
-def inference_openai(prompt):
-    print("thinking...")
-    response = client.responses.create(
-    model="gpt-5",
-    input=prompt
+# ─── Custom Module Loader ────────────────────────────────────────────────────
+def _load(rel_path, module_name):
+    spec = importlib.util.spec_from_file_location(
+        module_name,
+        os.path.join(os.path.dirname(__file__), rel_path)
     )
+    
+    # Linter (VS Code) ko satisfy karne ke liye None check
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot find or load module: {module_name} at {rel_path}")
 
-    return response.output_text
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = mod
+    spec.loader.exec_module(mod)
+    return mod
 
-df = joblib.load('newembeddings.joblib')
+
+# Loading custom modules
+_t = _load("src/5_get_transcript.py", "get_transcript_mod")
+get_transcript_for_url          = _t.get_transcript_for_url
+format_transcript_with_timestamps = _t.format_transcript_with_timestamps
+extract_video_id                  = _t.extract_video_id
+
+_m = _load("src/3_merge_chunks.py", "merge_chunks_mod")
+merge_transcript_into_chunks  = _m.merge_transcript_into_chunks
+format_time                   = _m.format_time
+
+_e = _load("src/4_embed_data.py", "embed_data_mod")
+embed_chunks                  = _e.embed_chunks
+find_relevant_chunks          = _e.find_relevant_chunks
+
+# Database module
+_db = _load("src/database.py", "database_mod")
+initialize_db           = _db.initialize_db
+video_exists            = _db.video_exists
+save_video              = _db.save_video
+save_transcript         = _db.save_transcript
+load_transcript         = _db.load_transcript
+save_chunks             = _db.save_chunks
+load_chunks             = _db.load_chunks
+chunks_have_embeddings  = _db.chunks_have_embeddings
+
+# App start hone par database tables banao
+initialize_db()
 
 
-incoming_query = input("Ask a Question: ")
-question_embedding = create_embedding([incoming_query])[0] 
+# ─── Routes ─────────────────────────────────────────────────────────────────
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Global error handler — JSON response dega HTML ki jagah."""
+    import traceback
+    print("Unhandled Exception:", traceback.format_exc())
+    return jsonify({"success": False, "error": f"Server Error: {str(e)}"}), 500
 
-# Find similarities of question_embedding with other embeddings
-# print(np.vstack(df['embedding'].values))
-# print(np.vstack(df['embedding']).shape)
-similarities = cosine_similarity(np.vstack(df['embedding']), [question_embedding]).flatten()
-# print(similarities)
-top_results = 5
-max_indx = similarities.argsort()[::-1][0:top_results]
-# print(max_indx)
-new_df = df.loc[max_indx] 
-# print(new_df[["title", "number", "text"]])
 
-prompt = f'''I am teaching numpy library in my ai/ml prime course. Here are video subtitle chunks containing video title, video number, start time in seconds, end time in seconds, the text at that time:
+@app.route("/")
+def index():
+    """Main page"""
+    return render_template("index.html")
 
-{new_df[["title", "number", "start", "end", "text"]].to_json(orient="records")}
----------------------------------
-"{incoming_query}"
-User asked this question related to the video chunks, you have to answer in a human way (dont mention the above format, its just for you) where and how much content is taught in which video (in which video and at what timestamp) and guide the user to go to that particular video. If user asks unrelated question, tell him that you can only answer questions related to the course
-'''
-with open("prompt.txt", "w") as f:
-    f.write(prompt)
 
-# response = inference(prompt)["response"]
-# print(response)
+@app.route("/api/process", methods=["POST"])
+def process_url():
+    """
+    YouTube URL do → transcript lo → chunks banao → embed karo → DB mein save karo.
+    Agar same video pehle se DB mein hai toh directly wahan se load hoga.
+    """
+    # Agar data None ho toh usko khali dict `{}` maan lo
+    data = request.get_json() or {}
+    
+    url_value = data.get("url")
+    if not url_value:
+        return jsonify({"success": False, "error": "URL dena zaroori hai."}), 400
 
-response = inference_openai(prompt)
-print(response)
+    # Safety ke sath strip use karna taaki error na aaye
+    url = str(url_value).strip()
 
-with open("response.txt", "w", encoding="utf-8") as f:
-    f.write(response)
-# for index, item in new_df.iterrows():
-#     print(index, item["title"], item["number"], item["text"], item["start"], item["end"])
+    # Pehle video ID nikalo URL se (already loaded _t module se)
+    video_id = extract_video_id(url)
+
+    if not video_id:
+        return jsonify({"success": False, "error": "Invalid YouTube URL. Video ID nahi mila."}), 400
+
+    from_cache = False
+
+    # ── Cache check: Video already DB mein hai? ──────────────────────────────
+    if video_exists(video_id):
+        print(f"💾 Cache hit! '{video_id}' database mein mila.")
+        transcript_data   = load_transcript(video_id)
+        embedded_chunks   = load_chunks(video_id)
+        from_cache        = True
+
+    else:
+        # ── Fresh fetch ──────────────────────────────────────────────────────
+        print(f"🔄 '{video_id}' database mein nahi hai. YouTube se fetch kar rahe hain...")
+
+        result = get_transcript_for_url(url)
+        if not result["success"]:
+            return jsonify(result), 400
+
+        transcript_data = result["transcript"]
+        language        = result.get("language", "en")
+
+        # Chunks banao
+        chunks = merge_transcript_into_chunks(transcript_data)
+        if not chunks:
+            return jsonify({"success": False, "error": "Chunks nahi ban sake."}), 500
+
+        # Embeddings generate karo
+        try:
+            embedded_chunks = embed_chunks(chunks)
+        except Exception as e:
+            print(f"⚠️  Embedding error: {e}")
+            embedded_chunks = chunks  # Embedding fail hone par bhi aage chalo
+
+        # ── Database mein save karo ──────────────────────────────────────────
+        save_video(video_id, language)
+        save_transcript(video_id, transcript_data)
+        save_chunks(video_id, embedded_chunks)
+        print(f"✅ '{video_id}' database mein save ho gaya.")
+
+    # UI ke liye formatted transcript
+    formatted = format_transcript_with_timestamps(transcript_data)
+
+    return jsonify({
+        "success":      True,
+        "video_id":     video_id,
+        "from_cache":   from_cache,
+        "total_lines":  len(formatted),
+        "total_chunks": len(embedded_chunks),
+        "transcript":   formatted,
+    })
+
+
+@app.route("/api/transcript/<video_id>", methods=["GET"])
+def get_full_transcript(video_id):
+    """Poora transcript database se fetch karo."""
+    if not video_exists(video_id):
+        return jsonify({"success": False, "error": "Transcript nahi mila. Pehle URL process karein."}), 404
+
+    rows = load_transcript(video_id)
+
+    formatted = [
+        {
+            "time":          format_time(row["start"]),
+            "start_seconds": row["start"],
+            "text":          row["text"],
+        }
+        for row in rows
+    ]
+    return jsonify({"success": True, "video_id": video_id, "transcript": formatted})
+
+
+@app.route("/api/ask", methods=["POST"])
+def ask_question():
+    """
+    Video ke baare mein question poocho → DB se chunks lo → AI answer dega.
+    """
+    data       = request.get_json() or {}
+    
+    # or "" ka use karke ensure karein ki string object hi return ho strip ke liye
+    video_id   = (data.get("video_id") or "").strip()
+    question   = (data.get("question") or "").strip()
+
+    if not video_id or not question:
+        return jsonify({"success": False, "error": "video_id aur question dono zaroori hain."}), 400
+
+    if not video_exists(video_id):
+        return jsonify({"success": False, "error": "Pehle URL process karo."}), 400
+
+    # Database se chunks lo
+    embedded_chunks = load_chunks(video_id)
+
+    # Relevant chunks dhundo
+    try:
+        relevant_chunks = find_relevant_chunks(question, embedded_chunks, top_k=4)
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Embedding error: {str(e)}"}), 500
+
+    if not relevant_chunks:
+        return jsonify({"success": False, "error": "Relevant content nahi mila."}), 404
+
+    # GPT ke liye context banao
+    context_parts = []
+    for chunk in relevant_chunks:
+        start_label = format_time(chunk["start_time"])
+        end_label   = format_time(chunk["end_time"])
+        context_parts.append(f"[{start_label} - {end_label}] {chunk['text']}")
+
+    context = "\n\n".join(context_parts)
+
+    system_prompt = """Tu ek helpful YouTube video assistant hai.
+Tujhe video ke transcript ke hissay diye gaye hain unke start aur end timestamps ke saath.
+User ke sawal ka jawab sirf transcript ke content se de.
+Answer mein exact timestamp range (jaise [02:15 - 03:00]) zaroor mention kar, jisse pata chale ki topic kahan discuss hua hai.
+Agar answer transcript mein nahi hai toh seedha bol do.
+Hindi aur English dono mein answer de sakta hai."""
+
+    user_message = f"""Video Transcript ke relevant hisse:
+{context}
+
+Sawal: {question}"""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user",   "content": user_message},
+            ],
+            temperature=0.3,
+            max_tokens=600,
+        )
+        answer = response.choices[0].message.content.strip()
+    except Exception as e:
+        return jsonify({"success": False, "error": f"OpenAI error: {str(e)}"}), 500
+
+    sources = [
+        {
+            "time":          f"{format_time(chunk['start_time'])} - {format_time(chunk['end_time'])}",
+            "start_seconds": chunk["start_time"],
+            "text":          chunk["text"][:100] + "...",
+            "score":         chunk["score"],
+        }
+        for chunk in relevant_chunks
+    ]
+
+    return jsonify({
+        "success":    True,
+        "answer":     answer,
+        "from_cache": True,   # Chunks hamesha DB se aate hain ab
+        "sources":    sources,
+    })
+
+
+@app.route("/api/status/<video_id>", methods=["GET"])
+def video_status(video_id):
+    """Video ka status check karo database mein."""
+    if not video_exists(video_id):
+        return jsonify({"exists": False})
+
+    transcript    = load_transcript(video_id)
+    chunks        = load_chunks(video_id)
+    has_embeddings = chunks_have_embeddings(video_id)
+
+    return jsonify({
+        "exists":           True,
+        "video_id":         video_id,
+        "transcript_lines": len(transcript),
+        "chunks":           len(chunks),
+        "embedded":         has_embeddings,
+    })
+
+
+# ─── Run ─────────────────────────────────────────────────────────────────────
+if __name__ == "__main__":
+    debug = os.getenv("FLASK_DEBUG", "True").lower() == "true"
+    app.run(debug=debug, host="0.0.0.0", port=5000)
