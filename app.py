@@ -107,14 +107,14 @@ def process_url():
 
     # ── Cache check: Video already DB mein hai? ──────────────────────────────
     if video_exists(video_id):
-        print(f"💾 Cache hit! '{video_id}' database mein mila.")
+        print(f"Cache hit! '{video_id}' database mein mila.")
         transcript_data   = load_transcript(video_id)
         embedded_chunks   = load_chunks(video_id)
         from_cache        = True
 
     else:
         # ── Fresh fetch ──────────────────────────────────────────────────────
-        print(f"🔄 '{video_id}' database mein nahi hai. YouTube se fetch kar rahe hain...")
+        print(f"'{video_id}' database mein nahi hai. YouTube se fetch kar rahe hain...")
 
         result = get_transcript_for_url(url)
         if not result["success"]:
@@ -132,14 +132,14 @@ def process_url():
         try:
             embedded_chunks = embed_chunks(chunks)
         except Exception as e:
-            print(f"⚠️  Embedding error: {e}")
+            print(f"Embedding error: {e}")
             embedded_chunks = chunks  # Embedding fail hone par bhi aage chalo
 
         # ── Database mein save karo ──────────────────────────────────────────
         save_video(video_id, language)
         save_transcript(video_id, transcript_data)
         save_chunks(video_id, embedded_chunks)
-        print(f"✅ '{video_id}' database mein save ho gaya.")
+        print(f"'{video_id}' database mein save ho gaya.")
 
     # UI ke liye formatted transcript
     formatted = format_transcript_with_timestamps(transcript_data)
