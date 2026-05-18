@@ -8,3 +8,4 @@ embeddings
 __pycache__/
 *.pyc
 structure.txt
+response.txt
