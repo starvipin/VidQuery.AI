@@ -27,7 +27,7 @@ jobs:
 
       - name: Run Pytest
         # uv run se pytest chalayenge
-        run: uv run pytest tests/
+        run: PYTHONPATH=. uv run pytest tests/
 
   deploy:
     needs: test
