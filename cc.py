@@ -43,12 +43,33 @@ def get_transcript(video_url, preferred_langs=None):
     try:
         print("🔄 Transcript fetch ho raha hai...")
 
-        # NEW VERSION
-        ytt_api = YouTubeTranscriptApi()
+        import os
+        import tempfile
 
-        transcript = ytt_api.fetch(
+        cookies_file = None
+        proxies = None
+        
+        youtube_cookies_env = os.getenv("YOUTUBE_COOKIES")
+        if youtube_cookies_env:
+            temp_dir = tempfile.gettempdir()
+            cookies_file = os.path.join(temp_dir, "youtube_cookies.txt")
+            with open(cookies_file, "w", encoding="utf-8") as f:
+                f.write(youtube_cookies_env)
+        elif os.path.exists("cookies.txt"):
+            cookies_file = "cookies.txt"
+
+        http_proxy = os.getenv("HTTP_PROXY") or os.getenv("http_proxy")
+        https_proxy = os.getenv("HTTPS_PROXY") or os.getenv("https_proxy")
+        if http_proxy or https_proxy:
+            proxies = {}
+            if http_proxy: proxies["http"] = http_proxy
+            if https_proxy: proxies["https"] = https_proxy
+
+        transcript = YouTubeTranscriptApi.get_transcript(
             video_id,
-            languages=preferred_langs
+            languages=preferred_langs,
+            proxies=proxies,
+            cookies=cookies_file
         )
 
         return transcript

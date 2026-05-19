@@ -51,7 +51,6 @@ def fetch_transcript(
 ) -> dict:
     """
     YouTube transcript fetch karo.
-
     Returns:
     {
         "success": True,
