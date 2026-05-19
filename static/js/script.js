@@ -218,7 +218,8 @@ analyzeBtn.addEventListener('click', async () => {
         console.warn(err);
         analyzeBtn.innerHTML = 'Analyze';
         analyzeBtn.disabled = false;
-        landingError.textContent = "Error: Could not connect to backend.";
+        // Ab ye Asli Error dikhayega jo backend se aayegi
+        landingError.textContent = err.message || "Error: Could not connect to backend.";
         landingError.style.display = 'block';
     }
 });
