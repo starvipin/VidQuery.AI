@@ -43,10 +43,19 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions"
+          # 1. Actions ke server par purani history delete karo (GitHub par safe rahegi)
+          rm -rf .git
+          
+          # 2. Default branch ka naam 'main' set karke naya git shuru karo
+          git config --global init.defaultBranch main
           git init
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          
+          # 3. Hugging Face ko remote add karo
           git remote add hf https://sainivipin:$HF_TOKEN@huggingface.co/spaces/sainivipin/VidQuery-AI
+          
+          # 4. Saari saaf files add karke naya commit aur force push karo
           git add .
-          git commit -m "Deploy to HF"
-          git push --force hf HEAD:main
+          git commit -m "Deploy fresh code to HF"
+          git push --force hf main
