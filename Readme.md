@@ -1,3 +1,16 @@
+---
+title: VidQuery AI
+emoji: 🎥
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+app_port: 7860
+---
+
+# VidQuery AI
+Ye ek AI-powered application hai jo YouTube videos se data nikal kar answers deti hai.
+
 # How to use this RAG AI Teaching assistant on your own data
 ## Step 1 - Collect your videos
 Move all your video files to the videos folder
