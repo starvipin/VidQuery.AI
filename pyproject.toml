@@ -6,11 +6,15 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "dotenv>=0.9.9",
+    "fastapi>=0.136.1",
     "flask==3.0.3",
+    "httpx>=0.28.1",
     "mysql-connector-python>=9.7.0",
     "numpy>=2.4.5",
     "openai>=2.37.0",
+    "pytest>=9.0.3",
     "python-dotenv>=1.2.2",
+    "uvicorn>=0.47.0",
     "youtube-transcript-api>=1.2.4",
 ]
 
