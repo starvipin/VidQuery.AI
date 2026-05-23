@@ -11,7 +11,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 
 # Dependencies install karein (`--frozen` ensure karta hai ki lock file change na ho)
-RUN uv sync --frozen --no-cache
+RUN uv sync --frozen --no-cache --no-install-project
 
 # Ab baaki ka poora code copy karein
 COPY . .
