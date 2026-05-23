@@ -1,15 +1,15 @@
+import html
+import json
 import os
 import re
-import json
-import html
 import xml.etree.ElementTree as ET
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import httpx
 from youtube_transcript_api import (
-    YouTubeTranscriptApi,
     NoTranscriptFound,
     TranscriptsDisabled,
+    YouTubeTranscriptApi,
 )
 from youtube_transcript_api._errors import IpBlocked, RequestBlocked
 from youtube_transcript_api.proxies import GenericProxyConfig
@@ -24,9 +24,7 @@ YOUTUBE_HEADERS = {
     "Accept-Language": "en-US,en;q=0.9,hi;q=0.8",
 }
 
-# ─────────────────────────────────────────────
-# 1. YouTube URL se Video ID nikalo
-# ─────────────────────────────────────────────
+
 def extract_video_id(url: str) -> str | None:
     """
     Supports:
@@ -60,21 +58,6 @@ def _proxy_urls() -> dict[str, str] | None:
     return {
         "http://": http_proxy or https_proxy,
         "https://": https_proxy or http_proxy,
-# ─────────────────────────────────────────────
-# Transcript Fetch Function
-# ─────────────────────────────────────────────
-def fetch_transcript(
-    video_id: str,
-    preferred_langs: list[str] | None = None
-) -> dict:
-    """
-    YouTube transcript fetch karo.
-    Returns:
-    {
-        "success": True,
-        "video_id": "...",
-        "language": "en",
-        "transcript": [...]
     }
 
 
@@ -206,7 +189,7 @@ def _fetch_transcript_from_watch_page(video_id: str, preferred_langs: list[str])
         )
         track = _pick_caption_track(caption_tracks, preferred_langs)
         if not track:
-            raise NoTranscriptFound(video_id, [], {})
+            raise RuntimeError("Is video mein transcript available nahi hai.")
 
         caption_url = _with_query(track["baseUrl"], {"fmt": "json3"})
         caption_response = client.get(caption_url)
@@ -214,7 +197,7 @@ def _fetch_transcript_from_watch_page(video_id: str, preferred_langs: list[str])
 
     transcript = _parse_caption_response(caption_response.text)
     if not transcript:
-        raise NoTranscriptFound(video_id, [], {})
+        raise RuntimeError("Is video mein transcript available nahi hai.")
 
     return {
         "success": True,
@@ -233,15 +216,12 @@ def _fetch_transcript_from_api(video_id: str, preferred_langs: list[str]) -> dic
             https_url=proxy_urls.get("https://"),
         )
 
-    # youtube-transcript-api v1.x uses an API instance. Cookie auth is disabled
-    # upstream right now, so proxy support is the reliable deploy workaround.
     ytt_api = YouTubeTranscriptApi(proxy_config=proxy_config)
     transcript_list = ytt_api.list(video_id)
 
     transcript = None
     used_lang = None
 
-    # Preferred language selector
     for lang in preferred_langs:
         try:
             transcript = transcript_list.find_transcript([lang])
@@ -250,32 +230,18 @@ def _fetch_transcript_from_api(video_id: str, preferred_langs: list[str]) -> dic
         except Exception:
             continue
 
-    # Fallback to English
     if transcript is None:
         transcript = transcript_list.find_transcript(["en"])
         used_lang = "en"
-
-    data = transcript.fetch().to_raw_data()
-    result = []
-
-    for item in data:
-        result.append({
-            "text": item.get("text", ""),
-            "start": item.get("start", 0),
-            "duration": item.get("duration", 0),
-        })
 
     return {
         "success": True,
         "video_id": video_id,
         "language": used_lang,
-        "transcript": result,
+        "transcript": transcript.fetch().to_raw_data(),
     }
 
 
-# ─────────────────────────────────────────────
-# 2. Transcript Fetch Function
-# ─────────────────────────────────────────────
 def fetch_transcript(video_id: str, preferred_langs: list[str] | None = None) -> dict:
     """
     YouTube transcript fetch karo.
@@ -284,7 +250,7 @@ def fetch_transcript(video_id: str, preferred_langs: list[str] | None = None) ->
     if not video_id:
         return {
             "success": False,
-            "error": "fetch_transcript ko video_id nahi mili."
+            "error": "fetch_transcript ko video_id nahi mili.",
         }
 
     if preferred_langs is None:
@@ -292,7 +258,6 @@ def fetch_transcript(video_id: str, preferred_langs: list[str] | None = None) ->
 
     try:
         return _fetch_transcript_from_api(video_id, preferred_langs)
-
     except NoTranscriptFound:
         try:
             return _fetch_transcript_from_watch_page(video_id, preferred_langs)
@@ -310,8 +275,8 @@ def fetch_transcript(video_id: str, preferred_langs: list[str] | None = None) ->
                     "YouTube ne deployment server ki IP block kar di hai. "
                     "Free fallback bhi block ho gaya. Paid proxy ke bina cloud par "
                     "har YouTube link guarantee ke saath fetch nahi ho sakta. "
-                    "Try karein: video ka public captions on ho, ya same video ko local par process karke cache deploy karein."
-                )
+                    "Try karein: video ka public captions on ho."
+                ),
             }
     except Exception as e:
         try:
@@ -320,9 +285,6 @@ def fetch_transcript(video_id: str, preferred_langs: list[str] | None = None) ->
             return {"success": False, "error": str(e)}
 
 
-# ─────────────────────────────────────────────
-# 3. Main URL Handler
-# ─────────────────────────────────────────────
 def get_transcript_for_url(url: str) -> dict:
     """
     Full URL handle karne ke liye.
@@ -332,25 +294,20 @@ def get_transcript_for_url(url: str) -> dict:
     if not video_id:
         return {
             "success": False,
-            "error": "Invalid YouTube URL. Video ID nahi mila."
+            "error": "Invalid YouTube URL. Video ID nahi mila.",
         }
 
-    print(f"\n🔄 Fetching transcript for Video ID: {video_id}")
-    
-    # Yahan hum explicit keyword passing kar rahe hain taaki strictly map ho
-    result = fetch_transcript(video_id=video_id) 
-    
+    print(f"\nFetching transcript for Video ID: {video_id}")
+    result = fetch_transcript(video_id=video_id)
+
     if not result["success"]:
         return result
 
-    print(f"✅ Transcript fetched successfully ({len(result['transcript'])} lines)")
+    print(f"Transcript fetched successfully ({len(result['transcript'])} lines)")
     result["from_cache"] = False
     return result
 
 
-# ─────────────────────────────────────────────
-# 4. Timestamp Formatter
-# ─────────────────────────────────────────────
 def format_transcript_with_timestamps(transcript: list) -> list:
     """
     Timestamps formatting (HH:MM:SS)
@@ -377,38 +334,31 @@ def format_transcript_with_timestamps(transcript: list) -> list:
     return formatted
 
 
-# ─────────────────────────────────────────────
-# 5. Save JSON
-# ─────────────────────────────────────────────
 def save_transcript_json(data: dict, filename: str = "transcript.json"):
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
-    print(f"\n💾 Saved to: {filename}")
+    print(f"\nSaved to: {filename}")
 
 
-# ─────────────────────────────────────────────
-# 6. Execution Block
-# ─────────────────────────────────────────────
 if __name__ == "__main__":
-    test_url = input("🎥 YouTube URL dalo: ").strip()
-    
+    test_url = input("YouTube URL dalo: ").strip()
+
     if test_url:
         result = get_transcript_for_url(url=test_url)
 
         if result["success"]:
             formatted = format_transcript_with_timestamps(result["transcript"])
 
-            print(f"\n📺 Video ID   : {result['video_id']}")
-            print(f"🌐 Language   : {result['language']}")
-            print(f"📝 Total lines : {len(formatted)}\n")
+            print(f"\nVideo ID   : {result['video_id']}")
+            print(f"Language   : {result['language']}")
+            print(f"Total lines : {len(formatted)}\n")
 
-            # Preview top 10 lines
             for item in formatted[:10]:
                 print(f"[{item['time']}] {item['text']}")
 
             print("\n...")
             save_transcript_json(result)
         else:
-            print(f"\n❌ Error: {result['error']}")
+            print(f"\nError: {result['error']}")
     else:
-        print("\n❌ Input khali hai. Sahi URL enter karein.")
+        print("\nInput khali hai. Sahi URL enter karein.")
