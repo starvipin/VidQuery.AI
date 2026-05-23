@@ -60,6 +60,21 @@ def _proxy_urls() -> dict[str, str] | None:
     return {
         "http://": http_proxy or https_proxy,
         "https://": https_proxy or http_proxy,
+# ─────────────────────────────────────────────
+# Transcript Fetch Function
+# ─────────────────────────────────────────────
+def fetch_transcript(
+    video_id: str,
+    preferred_langs: list[str] | None = None
+) -> dict:
+    """
+    YouTube transcript fetch karo.
+    Returns:
+    {
+        "success": True,
+        "video_id": "...",
+        "language": "en",
+        "transcript": [...]
     }
 
 
