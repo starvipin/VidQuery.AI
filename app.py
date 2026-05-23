@@ -17,7 +17,11 @@ app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-key-change-this")
 
 # Initialize OpenAI Client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+def get_openai_client() -> OpenAI:
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY environment variable set nahi hai.")
+    return OpenAI(api_key=api_key)
 
 
 # ─── Custom Module Loader ────────────────────────────────────────────────────
@@ -227,7 +231,7 @@ Hindi aur English dono mein answer de sakta hai."""
 Sawal: {question}"""
 
     try:
-        response = client.chat.completions.create(
+        response = get_openai_client().chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},

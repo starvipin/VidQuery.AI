@@ -10,10 +10,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
 EMBEDDING_MODEL = "text-embedding-3-small"
 BATCH_SIZE = 100  # OpenAI API ek baar mein kitne texts embed kare
+
+
+def get_openai_client() -> OpenAI:
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY environment variable set nahi hai.")
+    return OpenAI(api_key=api_key)
 
 
 def get_embeddings_batch(texts: list[str]) -> list[list[float]]:
@@ -24,7 +29,7 @@ def get_embeddings_batch(texts: list[str]) -> list[list[float]]:
     # Empty strings hata do
     clean_texts = [t.strip() if t.strip() else "empty" for t in texts]
     
-    response = client.embeddings.create(
+    response = get_openai_client().embeddings.create(
         model=EMBEDDING_MODEL,
         input=clean_texts,
     )
