@@ -54,7 +54,7 @@ jobs:
           git config user.name "GitHub Actions"
           
           # 3. Hugging Face ko remote add karo
-          git remote add hf https://sainivipin:$HF_TOKEN@huggingface.co/spaces/sainivipin/VidQuery-AI
+          git remote add hf https://sainivipin:$HF_TOKEN@huggingface.co/spaces/sainivipin/VidQuery
           
           # 4. Saari saaf files add karke naya commit aur force push karo
           git add .
