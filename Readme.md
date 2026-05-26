@@ -46,8 +46,8 @@ Windows:
 3. Terminal me jo `https://*.trycloudflare.com` URL aaye, users ko wahi link share karein.
 
 Note: PC/laptop aur terminal window on rehna zaroori hai. Window band karte hi public URL stop ho jayega.
-
-# How to use this RAG AI Teaching assistant on your own data
+ 
+# How to use this RAG AI Teaching assistant on your own data 
 ## Step 1 - Collect your videos
 Move all your video files to the videos folder
 
