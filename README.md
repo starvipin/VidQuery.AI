@@ -11,7 +11,7 @@ app_port: 7860
 # VidQuery AI
 Ye ek AI-powered application hai jo YouTube videos se data nikal kar answers deti hai.
 
-## Deployment note: YouTube transcript fetching
+## Deployment note: YouTube transcript  fetching
 
 Ye app pehle `youtube-transcript-api` se transcript fetch karta hai. Agar cloud server par YouTube block kare, app ek free fallback try karta hai: YouTube watch page se caption track metadata nikal kar timed captions fetch karna.
 
