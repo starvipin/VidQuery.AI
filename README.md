@@ -1,12 +1,14 @@
 ---
 title: VidQuery AI
-emoji: 🎥
-colorFrom: blue
-colorTo: indigo
+emoji: 🦀
+colorFrom: indigo
+colorTo: blue
 sdk: docker
 pinned: false
-app_port: 7860
 ---
+
+Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+
 
 # VidQuery AI
 Ye ek AI-powered application hai jo YouTube videos se data nikal kar answers deti hai.
