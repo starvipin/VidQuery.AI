@@ -48,6 +48,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Verify Dockerfile before HF deploy
+        run: |
+          echo "GitHub commit: $GITHUB_SHA"
+          echo "Dockerfile being deployed:"
+          sed -n '1,120p' Dockerfile
+          if grep -F 'COPY --chown=user . $HOME/app' Dockerfile; then
+            echo "Old Dockerfile detected. Refusing to deploy stale build context."
+            exit 1
+          fi
+          grep -F 'Build import OK' Dockerfile
 
       - name: Push to Hugging Face
         env:
@@ -66,5 +76,5 @@ jobs:
           git remote add hf https://sainivipin:$HF_TOKEN@huggingface.co/spaces/star4201/query.AI          
           # 4. Saari saaf files add karke naya commit aur force push karo
           git add .
-          git commit -m "Deploy fresh code to HF"
+          git commit -m "Deploy fresh code to HF from $GITHUB_SHA"
           git push --force hf main
