@@ -85,6 +85,12 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/health")
+def health():
+    """HF/container health check ke liye lightweight endpoint."""
+    return jsonify({"ok": True})
+
+
 @app.route("/api/process", methods=["POST"])
 def process_url():
     """

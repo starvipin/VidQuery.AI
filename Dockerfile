@@ -13,7 +13,8 @@ USER user
 
 # Set home directory and path environment variables
 ENV HOME=/home/user \
-    PATH=/home/user/.local/bin:$PATH
+    PATH=/home/user/app/.venv/bin:/home/user/.local/bin:$PATH \
+    PYTHONUNBUFFERED=1
 
 # Working directory set karein (user ki home directory ke andar)
 WORKDIR $HOME/app
@@ -33,8 +34,11 @@ COPY --chown=user src ./src
 COPY --chown=user static ./static
 COPY --chown=user templates ./templates
 
+# Build ke time app import verify karo, taaki startup crash build log mein hi dikhe.
+RUN python -c "import app; print('Build import OK')"
+
 # Hugging Face Spaces ka default port
 EXPOSE 7860
 
-# `uv run` ka use karke gunicorn start karein
-CMD ["uv", "run", "--no-sync", "gunicorn", "-b", "0.0.0.0:7860", "app:app", "--timeout", "120"]
+# Virtualenv mein installed gunicorn ko directly start karein.
+CMD ["gunicorn", "-b", "0.0.0.0:7860", "app:app", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-"]
