@@ -26,8 +26,12 @@ COPY --chown=user pyproject.toml uv.lock ./
 # Ab kyunki 'USER user' set hai, `uv` correct permissions ke sath .venv banayega
 RUN uv sync --frozen --no-cache --no-install-project
 
-# Ab baaki ka poora code copy karein with correct ownership
-COPY --chown=user . $HOME/app
+# Ab sirf runtime ke liye required files copy karein.
+# Isse local .venv/cache/videos/database jaise heavy folders Docker image mein nahi jaate.
+COPY --chown=user app.py cc.py README.md ./
+COPY --chown=user src ./src
+COPY --chown=user static ./static
+COPY --chown=user templates ./templates
 
 # Hugging Face Spaces ka default port
 EXPOSE 7860
