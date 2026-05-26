@@ -2,7 +2,7 @@
 name = "VidQuery.AI"
 version = "0.1.0"
 description = "Add your description here"
-readme = "Readme.md"
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "dotenv>=0.9.9",
@@ -21,3 +21,6 @@ dependencies = [
 
 [tool.pyright]
 extraPaths = ["."]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

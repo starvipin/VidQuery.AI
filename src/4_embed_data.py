@@ -47,10 +47,10 @@ def embed_chunks(chunks: list) -> list:
         List of chunks jisme 'embedding' add ho gayi hai.
     """
     if not chunks:
-        print("❌ Koi chunks nahi mile embed karne ke liye.")
+        print("Koi chunks nahi mile embed karne ke liye.")
         return []
 
-    print(f"🔄 {len(chunks)} chunks ke embeddings generate ho rahe hain...")
+    print(f"{len(chunks)} chunks ke embeddings generate ho rahe hain...")
 
     # Batch mein embed karo
     texts = [chunk["text"] for chunk in chunks]
@@ -66,7 +66,7 @@ def embed_chunks(chunks: list) -> list:
     for chunk, embedding in zip(chunks, all_embeddings):
         chunk["embedding"] = embedding
 
-    print(f"✅ {len(chunks)} chunks ke embeddings generate ho gaye.")
+    print(f"{len(chunks)} chunks ke embeddings generate ho gaye.")
     return chunks
 
 
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         {"chunk_index": 2, "start_time": 10.0, "end_time": 15.0, "text": "We use OpenAI API to generate text embeddings.", "embedding": None}
     ]
     
-    print("⚙️ Dummy chunks ke embeddings generate kar rahe hain (OpenAI API key zaroori hai)...")
+    print("Dummy chunks ke embeddings generate kar rahe hain (OpenAI API key zaroori hai)...")
     try:
         # Pura process variables (lists) par chalega, DB par nahi
         embedded_chunks = embed_chunks(dummy_chunks)
@@ -153,4 +153,4 @@ if __name__ == "__main__":
                 for r in results:
                     print(f"[Score: {r['score']}] [{format_time(r['start_time'])}] {r['text']}")
     except Exception as e:
-        print(f"❌ Error aaya (Shayad aapki OpenAI API key set nahi hai): {e}")
+        print(f"Error aaya (Shayad aapki OpenAI API key set nahi hai): {e}")

@@ -66,7 +66,7 @@ def initialize_db():
 
     conn.commit()
     conn.close()
-    print(f"✅ Database ready: {DB_PATH}")
+    print(f"Database ready: {DB_PATH}")
 
 
 # ─── Video ──────────────────────────────────────────────────────────────────

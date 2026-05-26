@@ -33,4 +33,4 @@ COPY --chown=user . $HOME/app
 EXPOSE 7860
 
 # `uv run` ka use karke gunicorn start karein
-CMD ["uv", "run", "gunicorn", "-b", "0.0.0.0:7860", "app:app", "--timeout", "120"]
+CMD ["uv", "run", "--no-sync", "gunicorn", "-b", "0.0.0.0:7860", "app:app", "--timeout", "120"]
