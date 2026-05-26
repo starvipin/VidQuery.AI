@@ -1,6 +1,6 @@
 name: CI/CD Pipeline to Hugging Face Spaces
-
 on:
+  workflow_dispatch:
   push:
     branches: [ "main" ]
 env:
