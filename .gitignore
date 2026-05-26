@@ -10,3 +10,4 @@ __pycache__/
 structure.txt
 response.txt
 database
+.venv
