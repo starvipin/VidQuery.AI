@@ -275,8 +275,8 @@ def fetch_transcript(video_id: str, preferred_langs: list[str] | None = None) ->
                     "YouTube ne deployment server ki IP block kar di hai. "
                     "Free fallback bhi block ho gaya. Paid proxy ke bina cloud par "
                     "har YouTube link guarantee ke saath fetch nahi ho sakta. "
-                    "Free reliable option: app ko local machine par run karke "
-                    "Cloudflare Tunnel/ngrok se public URL expose karein."
+                    "Cloud deployment par reliable transcript fetching ke liye "
+                    "ek trusted proxy ya pre-cached transcripts use karein."
                 ),
             }
     except Exception as e:

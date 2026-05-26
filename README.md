@@ -30,23 +30,6 @@ YOUTUBE_HTTPS_PROXY=http://username:password@proxy-host:port
 
 Note: Official YouTube Data API public videos ke captions ko freely return nahi karti. Isliye sirf YouTube API key add karne se transcript fetch problem solve nahi hoti.
 
-## Free public sharing without paid proxy
-
-Paid proxy ke bina sabse reliable free setup ye hai ki app tumhare laptop/PC par run ho aur public URL Cloudflare Tunnel se mile. Isme YouTube request tumhare local internet se jayegi, Hugging Face/Render ki blocked IP se nahi.
-
-Windows:
-
-1. Cloudflared install karein: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/
-2. Project folder me command run karein:
-
-```powershell
-.\scripts\start_public_local.ps1
-```
-
-3. Terminal me jo `https://*.trycloudflare.com` URL aaye, users ko wahi link share karein.
-
-Note: PC/laptop aur terminal window on rehna zaroori hai. Window band karte hi public URL stop ho jayega.
- 
 # How to use this RAG AI Teaching assistant on your own data 
 ## Step 1 - Collect your videos
 Move all your video files to the videos folder
