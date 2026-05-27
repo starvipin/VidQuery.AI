@@ -3,7 +3,6 @@ import json
 import os
 import re
 import xml.etree.ElementTree as ET
-from http.cookiejar import Cookie, CookieJar
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import httpx
@@ -24,14 +23,6 @@ YOUTUBE_HEADERS = {
     ),
     "Accept-Language": "en-US,en;q=0.9,hi;q=0.8",
 }
-
-
-BLOCKED_TRANSCRIPT_ERROR = (
-    "YouTube ne deployment server ki IP block kar di hai. "
-    "Hugging Face jaise cloud par free direct fetching har video ke liye reliable nahi hoti. "
-    "HF Secrets mein YOUTUBE_HTTP_PROXY/YOUTUBE_HTTPS_PROXY, YOUTUBE_COOKIES, "
-    "ya INVIDIOUS_BASE_URLS set karein; pehle se processed videos cache se chalenge."
-)
 
 
 def extract_video_id(url: str) -> str | None:
@@ -75,67 +66,6 @@ def _httpx_proxy_url() -> str | None:
     if not proxy_urls:
         return None
     return proxy_urls.get("https://") or proxy_urls.get("http://")
-
-
-def _cookie_header_from_env() -> str | None:
-    raw_cookies = os.getenv("YOUTUBE_COOKIES")
-    if not raw_cookies:
-        return None
-
-    stripped = raw_cookies.strip()
-    if "=" in stripped and "\t" not in stripped and not stripped.startswith("#"):
-        return stripped.replace("\n", "; ").strip("; ")
-
-    cookie_parts = []
-    for line in stripped.splitlines():
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-
-        columns = line.split("\t")
-        if len(columns) >= 7:
-            name = columns[5].strip()
-            value = columns[6].strip()
-            if name and value:
-                cookie_parts.append(f"{name}={value}")
-
-    return "; ".join(cookie_parts) if cookie_parts else None
-
-
-def _cookie_jar_from_header(cookie_header: str | None) -> CookieJar | None:
-    if not cookie_header:
-        return None
-
-    jar = CookieJar()
-    for part in cookie_header.split(";"):
-        if "=" not in part:
-            continue
-        name, value = part.split("=", 1)
-        name = name.strip()
-        value = value.strip()
-        if not name:
-            continue
-        jar.set_cookie(Cookie(
-            version=0,
-            name=name,
-            value=value,
-            port=None,
-            port_specified=False,
-            domain=".youtube.com",
-            domain_specified=True,
-            domain_initial_dot=True,
-            path="/",
-            path_specified=True,
-            secure=True,
-            expires=None,
-            discard=True,
-            comment=None,
-            comment_url=None,
-            rest={},
-            rfc2109=False,
-        ))
-
-    return jar
 
 
 def _with_query(url: str, extra_params: dict[str, str]) -> str:
@@ -236,25 +166,11 @@ def _parse_caption_response(raw_text: str) -> list[dict]:
     return transcript
 
 
-def _httpx_client() -> httpx.Client:
-    proxy_url = _httpx_proxy_url()
-    headers = dict(YOUTUBE_HEADERS)
-    cookie_header = _cookie_header_from_env()
-    if cookie_header:
-        headers["Cookie"] = cookie_header
-
-    return httpx.Client(
-        headers=headers,
-        follow_redirects=True,
-        timeout=15,
-        proxy=proxy_url,
-    )
-
-
 def _fetch_transcript_from_watch_page(video_id: str, preferred_langs: list[str]) -> dict:
+    proxy_url = _httpx_proxy_url()
     watch_url = f"https://www.youtube.com/watch?v={video_id}&hl=en"
 
-    with _httpx_client() as client:
+    with httpx.Client(headers=YOUTUBE_HEADERS, follow_redirects=True, timeout=15, proxy=proxy_url) as client:
         response = client.get(watch_url)
         response.raise_for_status()
 
@@ -291,58 +207,6 @@ def _fetch_transcript_from_watch_page(video_id: str, preferred_langs: list[str])
     }
 
 
-def _invidious_base_urls() -> list[str]:
-    raw_base_urls = os.getenv("INVIDIOUS_BASE_URLS", "")
-    return [
-        url.strip().rstrip("/")
-        for url in raw_base_urls.split(",")
-        if url.strip()
-    ]
-
-
-def _fetch_transcript_from_invidious(video_id: str, preferred_langs: list[str]) -> dict:
-    base_urls = _invidious_base_urls()
-    if not base_urls:
-        raise RuntimeError("INVIDIOUS_BASE_URLS set nahi hai.")
-
-    last_error = None
-    for base_url in base_urls:
-        try:
-            with _httpx_client() as client:
-                response = client.get(f"{base_url}/api/v1/captions/{video_id}")
-                response.raise_for_status()
-                data = response.json()
-                caption_tracks = data.get("captions") or data.get("captionTracks") or []
-                track = _pick_caption_track(caption_tracks, preferred_langs)
-                if not track:
-                    raise RuntimeError("Is video mein transcript available nahi hai.")
-
-                caption_url = track.get("url") or track.get("baseUrl")
-                if not caption_url:
-                    raise RuntimeError("Caption URL nahi mila.")
-                if caption_url.startswith("/"):
-                    caption_url = f"{base_url}{caption_url}"
-
-                caption_response = client.get(_with_query(caption_url, {"fmt": "json3"}))
-                caption_response.raise_for_status()
-
-            transcript = _parse_caption_response(caption_response.text)
-            if not transcript:
-                raise RuntimeError("Is video mein transcript available nahi hai.")
-
-            return {
-                "success": True,
-                "video_id": video_id,
-                "language": track.get("languageCode", "unknown"),
-                "transcript": transcript,
-            }
-        except Exception as exc:
-            last_error = exc
-            continue
-
-    raise RuntimeError(str(last_error) if last_error else "Invidious fallback fail ho gaya.")
-
-
 def _fetch_transcript_from_api(video_id: str, preferred_langs: list[str]) -> dict:
     proxy_config = None
     proxy_urls = _proxy_urls()
@@ -352,21 +216,7 @@ def _fetch_transcript_from_api(video_id: str, preferred_langs: list[str]) -> dic
             https_url=proxy_urls.get("https://"),
         )
 
-    cookie_header = _cookie_header_from_env()
-    if cookie_header:
-        import requests
-        http_client = requests.Session()
-        http_client.headers.update({
-            "User-Agent": YOUTUBE_HEADERS["User-Agent"],
-            "Cookie": cookie_header,
-        })
-        cookie_jar = _cookie_jar_from_header(cookie_header)
-        if cookie_jar is not None:
-            http_client.cookies = cookie_jar
-    else:
-        http_client = None
-
-    ytt_api = YouTubeTranscriptApi(proxy_config=proxy_config, http_client=http_client)
+    ytt_api = YouTubeTranscriptApi(proxy_config=proxy_config)
     transcript_list = ytt_api.list(video_id)
 
     transcript = None
@@ -409,24 +259,31 @@ def fetch_transcript(video_id: str, preferred_langs: list[str] | None = None) ->
     try:
         return _fetch_transcript_from_api(video_id, preferred_langs)
     except NoTranscriptFound:
-        fallback_error = "Is video mein transcript available nahi hai."
+        try:
+            return _fetch_transcript_from_watch_page(video_id, preferred_langs)
+        except Exception:
+            return {"success": False, "error": "Is video mein transcript available nahi hai."}
     except TranscriptsDisabled:
         return {"success": False, "error": "Is video mein captions disabled hain."}
     except (IpBlocked, RequestBlocked):
-        fallback_error = BLOCKED_TRANSCRIPT_ERROR
-    except Exception as e:
-        fallback_error = str(e)
-
-    for fetcher in (_fetch_transcript_from_watch_page, _fetch_transcript_from_invidious):
         try:
-            return fetcher(video_id, preferred_langs)
+            return _fetch_transcript_from_watch_page(video_id, preferred_langs)
         except Exception:
-            continue
-
-    if "blocked" in fallback_error.lower() or "ip" in fallback_error.lower():
-        return {"success": False, "error": BLOCKED_TRANSCRIPT_ERROR}
-
-    return {"success": False, "error": fallback_error}
+            return {
+                "success": False,
+                "error": (
+                    "YouTube ne deployment server ki IP block kar di hai. "
+                    "Free fallback bhi block ho gaya. Paid proxy ke bina cloud par "
+                    "har YouTube link guarantee ke saath fetch nahi ho sakta. "
+                    "Cloud deployment par reliable transcript fetching ke liye "
+                    "ek trusted proxy ya pre-cached transcripts use karein."
+                ),
+            }
+    except Exception as e:
+        try:
+            return _fetch_transcript_from_watch_page(video_id, preferred_langs)
+        except Exception:
+            return {"success": False, "error": str(e)}
 
 
 def get_transcript_for_url(url: str) -> dict:

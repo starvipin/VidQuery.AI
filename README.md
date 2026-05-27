@@ -30,16 +30,6 @@ YOUTUBE_HTTP_PROXY=http://username:password@proxy-host:port
 YOUTUBE_HTTPS_PROXY=http://username:password@proxy-host:port
 ```
 
-HF Spaces Secrets mein optional fallbacks:
-
-```env
-# Browser se export kiya hua raw Cookie header ya Netscape cookies.txt content
-YOUTUBE_COOKIES=VISITOR_INFO1_LIVE=...; YSC=...
-
-# Optional Invidious-compatible instances, comma separated
-INVIDIOUS_BASE_URLS=https://your-invidious-instance.example
-```
-
 Note: Official YouTube Data API public videos ke captions ko freely return nahi karti. Isliye sirf YouTube API key add karne se transcript fetch problem solve nahi hoti.
 
 # How to use this RAG AI Teaching assistant on your own data 
